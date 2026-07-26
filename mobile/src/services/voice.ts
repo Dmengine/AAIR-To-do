@@ -11,8 +11,8 @@ export async function startVoiceRecordingAsync() {
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: true,
     playsInSilentModeIOS: true,
-    interruptionModeIOS: Audio.InterruptionModeIOS.DoNotMix,
-    interruptionModeAndroid: Audio.InterruptionModeAndroid.DoNotMix,
+    interruptionModeIOS: 1,
+    interruptionModeAndroid: 1,
     shouldDuckAndroid: true,
     staysActiveInBackground: false,
   });

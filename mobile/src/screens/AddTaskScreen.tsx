@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Audio } from "expo-av";
 
 import { theme } from "../theme";
 import type { RootStackParamList } from "../navigation/AppNavigator";
@@ -44,16 +45,17 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
       return;
     }
 
-    let recording;
+    let recording: Audio.Recording | null = null;
     try {
       recording = await startVoiceRecordingAsync();
       setIsListening(true);
       setTranscriptPreview("Listening for tasks...");
 
+      const recordingRef = recording;
       setTimeout(async () => {
         try {
-          await recording.stopAndUnloadAsync();
-          const recordingUri = recording.getURI();
+          await recordingRef.stopAndUnloadAsync();
+          const recordingUri = recordingRef.getURI();
           if (!recordingUri) {
             throw new Error("No recording file was created.");
           }
