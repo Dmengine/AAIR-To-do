@@ -89,6 +89,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.pageMargin,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.lg,
   },
   header: {
     flexDirection: "row",

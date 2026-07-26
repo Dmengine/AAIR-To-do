@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Audio } from "expo-av";
 
@@ -15,6 +16,7 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
   const [title, setTitle] = useState(route.params?.prefilledTitle ?? "");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isListening, setIsListening] = useState(Boolean(route.params?.voiceMode));
   const [transcriptPreview, setTranscriptPreview] = useState<string>(route.params?.prefilledTitle ?? "");
   const [isBusy, setIsBusy] = useState(false);
@@ -30,6 +32,17 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
 
     addTask({ title: trimmedTitle, description, dueDate }, "manual");
     navigation.goBack();
+  }
+
+  function handleDateChange(event: unknown, selectedDate?: Date) {
+    setShowDatePicker(false);
+
+    if (!selectedDate) {
+      return;
+    }
+
+    const formattedDate = selectedDate.toISOString().slice(0, 10);
+    setDueDate(formattedDate);
   }
 
   async function handleVoiceMode() {
@@ -150,13 +163,19 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Due date</Text>
-            <TextInput
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={theme.colors.textSubtle}
-              style={styles.input}
-              value={dueDate}
-              onChangeText={setDueDate}
-            />
+            <Pressable onPress={() => setShowDatePicker(true)} style={styles.input}>
+              <Text style={[styles.dateText, !dueDate && styles.datePlaceholder]}>
+                {dueDate || "Select a date"}
+              </Text>
+            </Pressable>
+            {showDatePicker ? (
+              <DateTimePicker
+                value={dueDate ? new Date(`${dueDate}T12:00:00`) : new Date()}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+              />
+            ) : null}
           </View>
         </View>
 
@@ -303,6 +322,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
+  },
+  dateText: {
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  datePlaceholder: {
+    color: theme.colors.textSubtle,
   },
   textArea: {
     minHeight: 96,
