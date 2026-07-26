@@ -101,14 +101,22 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
           <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
             <Text style={styles.icon}>‹</Text>
           </Pressable>
-          <Text style={styles.title}>{headerLabel}</Text>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.title}>{headerLabel}</Text>
+            <Text style={styles.subtitle}>Capture your next task in seconds</Text>
+          </View>
           <Pressable onPress={handleVoiceMode} style={styles.iconButton} disabled={isBusy}>
             <Text style={styles.icon}>{isListening ? "■" : "🎤"}</Text>
           </Pressable>
         </View>
 
         <View style={styles.voicePanel}>
-          <Text style={styles.caption}>Voice input</Text>
+          <View style={styles.voicePanelHeader}>
+            <Text style={styles.caption}>Voice input</Text>
+            <View style={styles.voiceBadge}>
+              <Text style={styles.voiceBadgeText}>AI assisted</Text>
+            </View>
+          </View>
           <Text style={styles.panelTitle}>{isListening ? "Listening now" : "Tap the mic to dictate one or more tasks"}</Text>
           <Text style={styles.panelBody}>
             Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”
@@ -116,38 +124,40 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
           <Text style={styles.transcript}>{transcriptPreview || "Your transcript will appear here."}</Text>
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Task title</Text>
-          <TextInput
-            placeholder="What needs to be done?"
-            placeholderTextColor={theme.colors.textSubtle}
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
+        <View style={styles.formCard}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Task title</Text>
+            <TextInput
+              placeholder="Remind me to review the quarterly budget..."
+              placeholderTextColor={theme.colors.textSubtle}
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+            />
+          </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Description</Text>
-          <TextInput
-            placeholder="Add context or details"
-            placeholderTextColor={theme.colors.textSubtle}
-            multiline
-            style={[styles.input, styles.textArea]}
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Description</Text>
+            <TextInput
+              placeholder="Add context or details"
+              placeholderTextColor={theme.colors.textSubtle}
+              multiline
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Due date</Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={theme.colors.textSubtle}
-            style={styles.input}
-            value={dueDate}
-            onChangeText={setDueDate}
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Due date</Text>
+            <TextInput
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={theme.colors.textSubtle}
+              style={styles.input}
+              value={dueDate}
+              onChangeText={setDueDate}
+            />
+          </View>
         </View>
 
         <Pressable onPress={handleSave} style={styles.saveButton}>
@@ -177,6 +187,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
+  },
+  headerTextWrap: {
+    flex: 1,
+    alignItems: "center",
   },
   iconButton: {
     width: 40,
@@ -196,6 +211,14 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     fontWeight: "700",
     color: theme.colors.primary,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    textAlign: "center",
   },
   voicePanel: {
     backgroundColor: theme.colors.surface,
@@ -204,6 +227,29 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     padding: theme.spacing.cardPadding,
     gap: theme.spacing.sm,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  voicePanelHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  voiceBadge: {
+    backgroundColor: theme.colors.primaryTint,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+  },
+  voiceBadgeText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   caption: {
     color: theme.colors.textSubtle,
@@ -229,6 +275,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: "600",
   },
+  formCard: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.cardPadding,
+    gap: theme.spacing.lg,
+  },
   fieldGroup: {
     gap: theme.spacing.sm,
   },
@@ -240,11 +294,14 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   input: {
-    borderBottomColor: theme.colors.border,
-    borderBottomWidth: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surfaceSoft,
+    borderRadius: theme.radius.lg,
     color: theme.colors.text,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 24,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
   },
   textArea: {
@@ -254,7 +311,7 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: theme.spacing.sm,
     backgroundColor: theme.colors.primarySoft,
-    borderRadius: 999,
+    borderRadius: theme.radius.full,
     paddingVertical: theme.spacing.md,
     alignItems: "center",
     shadowColor: theme.colors.primary,

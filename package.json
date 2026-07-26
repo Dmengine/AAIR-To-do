@@ -9,5 +9,8 @@
     "mobile": "npm --workspace mobile run start",
     "server": "npm --workspace server run dev",
     "typecheck": "npm run typecheck --workspace server"
+  },
+  "devDependencies": {
+    "@types/react-native": "^0.72.8"
   }
 }

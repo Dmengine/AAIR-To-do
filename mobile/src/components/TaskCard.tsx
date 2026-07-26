@@ -33,12 +33,13 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
           </Text>
         ) : null}
 
-        {task.dueDate ? <Text style={styles.meta}>Due {formatDate(task.dueDate)}</Text> : null}
+        <View style={styles.metaRow}>
+          {task.dueDate ? <Text style={styles.meta}>Due {formatDate(task.dueDate)}</Text> : null}
+          <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteButton}>
+            <Text style={styles.deleteText}>Delete</Text>
+          </Pressable>
+        </View>
       </View>
-
-      <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteButton}>
-        <Text style={styles.deleteText}>Delete</Text>
-      </Pressable>
     </View>
   );
 }
@@ -62,6 +63,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: theme.spacing.md,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardCompleted: {
     opacity: 0.82,
@@ -111,6 +117,12 @@ const styles = StyleSheet.create({
   descriptionCompleted: {
     color: theme.colors.textSubtle,
   },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
   meta: {
     color: theme.colors.primary,
     fontSize: 12,
@@ -120,7 +132,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   deleteText: {
     color: theme.colors.destructive,
