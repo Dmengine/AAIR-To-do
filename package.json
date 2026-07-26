@@ -1,0 +1,13 @@
+{
+  "name": "aair-todo",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "server"
+  ],
+  "scripts": {
+    "mobile": "npm --workspace mobile run start",
+    "server": "npm --workspace server run dev",
+    "typecheck": "npm run typecheck --workspace server"
+  }
+}
