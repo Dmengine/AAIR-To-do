@@ -10,6 +10,7 @@ import type { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../store/tasks/TaskContext";
 import { requestMicrophonePermissionsAsync, startVoiceRecordingAsync, transcribeRecordingAsync } from "../services/voice";
 import { splitDictation } from "../utils/splitDictation";
+import { parseVoiceTaskTranscript } from "../utils/voiceTaskParser";
 
 type AddTaskScreenProps = NativeStackScreenProps<RootStackParamList, "AddTask">;
 
@@ -63,6 +64,20 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
       }
 
       setTranscriptPreview(transcript);
+      const structuredTask = parseVoiceTaskTranscript(transcript);
+
+      if (structuredTask.hasStructuredFields) {
+        if (structuredTask.title) {
+          setTitle(structuredTask.title);
+        }
+
+        if (structuredTask.description) {
+          setDescription(structuredTask.description);
+        }
+
+        return;
+      }
+
       const splitTranscript = splitDictation(transcript);
 
       if (splitTranscript.length === 1) {
@@ -191,7 +206,7 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
           <Text style={styles.panelTitle}>{isListening ? "Listening now" : isEditing ? "Edit the task details below" : "Tap the mic to dictate one or more tasks"}</Text>
           <Text style={styles.panelBody}>
             {isListening
-              ? "Speak naturally. Tap stop when you finish and the app will transcribe your voice into text."
+              ? "Speak naturally. Tap stop when you finish and the app will transcribe your voice into text, then try to map title and description from phrases like 'the title is' and 'the description is'."
               : isEditing
                 ? "Update the fields below, then save your changes."
                 : "Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”"}

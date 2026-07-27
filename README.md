@@ -8,7 +8,7 @@ Minimalist React Native to-do app built with TypeScript, AsyncStorage, React Nav
 - Node.js + Express
 - MongoDB Atlas with transactional writes
 - AsyncStorage for local persistence
-- OpenAI Whisper transcription endpoint for voice input
+- AssemblyAI transcription endpoint for voice input
 
 ## Features
 
@@ -39,7 +39,7 @@ npm install
 cp server/.env.example server/.env
 ```
 
-Set `MONGODB_URI` to your Atlas connection string and `OPENAI_API_KEY` if you want live speech-to-text transcription.
+Set `MONGODB_URI` to your Atlas connection string and `ASSEMBLYAI_API_KEY` if you want live speech-to-text transcription.
 
 3. Configure the mobile environment in `mobile/.env`:
 
