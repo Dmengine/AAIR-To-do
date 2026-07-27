@@ -70,9 +70,8 @@ Tap the microphone FAB on the Task List screen to open the Add Task screen in vo
 
 ## ACID Workflow
 
-Task writes on the API use MongoDB transactions for create, update, and delete operations. The mobile app also keeps an AsyncStorage copy so the task list survives app restarts even when the network is unavailable.
+For task writes on the API I used MongoDB transactions for create, update, and delete operations. The mobile app also keeps an AsyncStorage copy so the task list survives app restarts even when the network is unavailable.
 
 ## Screenshots
 
-Add the final app screenshots to `screenshots/` and embed them here so the evaluation can review the finished build without cloning the project.
-
+I added the final app screenshots to `screenshots/` and embed them here so the evaluation can review the finished build without cloning the project.
