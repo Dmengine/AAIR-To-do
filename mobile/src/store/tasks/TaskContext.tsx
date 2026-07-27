@@ -4,15 +4,21 @@ import type { Task, TaskDraft } from "../../types";
 import { splitDictation } from "../../utils/splitDictation";
 import { loadStoredTasks, saveStoredTasks } from "./taskStorage";
 import { sortTasks, taskReducer } from "./taskReducer";
+import {
+  createTaskOnServer,
+  deleteTaskOnServer,
+  fetchTasksFromServer,
+  updateTaskOnServer,
+} from "../../services/tasks";
 
 type TaskContextValue = {
   tasks: Task[];
   isHydrated: boolean;
-  addTask: (draft: TaskDraft, source?: Task["source"]) => void;
-  addTasksFromTranscript: (transcript: string) => void;
-  toggleTask: (taskId: string) => void;
-  removeTask: (taskId: string) => void;
-  updateTask: (taskId: string, changes: Partial<Pick<Task, "title" | "description" | "dueDate">>) => void;
+  addTask: (draft: TaskDraft, source?: Task["source"]) => Promise<void>;
+  addTasksFromTranscript: (transcript: string) => Promise<void>;
+  toggleTask: (taskId: string) => Promise<void>;
+  removeTask: (taskId: string) => Promise<void>;
+  updateTask: (taskId: string, changes: Partial<Pick<Task, "title" | "description" | "dueDate">>) => Promise<void>;
   taskCounts: { total: number; completed: number; active: number };
 };
 
@@ -29,14 +35,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    void loadStoredTasks().then((storedTasks) => {
-      if (!mounted) {
-        return;
-      }
+    void (async () => {
+      try {
+        const serverTasks = await fetchTasksFromServer();
 
-      dispatch({ type: "hydrate", tasks: storedTasks });
-      setIsHydrated(true);
-    });
+        if (!mounted) {
+          return;
+        }
+
+        dispatch({ type: "hydrate", tasks: serverTasks });
+        await saveStoredTasks(serverTasks);
+      } catch {
+        const storedTasks = await loadStoredTasks();
+
+        if (!mounted) {
+          return;
+        }
+
+        dispatch({ type: "hydrate", tasks: storedTasks });
+      } finally {
+        if (mounted) {
+          setIsHydrated(true);
+        }
+      }
+    })();
 
     return () => {
       mounted = false;
@@ -52,64 +74,54 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, [isHydrated, tasks]);
 
   const apiValue = useMemo<TaskContextValue>(() => {
-    function addTask(draft: TaskDraft, source: Task["source"] = "manual") {
+    async function addTask(draft: TaskDraft, source: Task["source"] = "manual") {
       const title = draft.title.trim();
       if (!title) {
         return;
       }
 
-      const now = new Date().toISOString();
-      dispatch({
-        type: "add-one",
-        task: {
-          id: createTaskId(),
-          title,
-          description: draft.description.trim() || undefined,
-          dueDate: draft.dueDate.trim() || undefined,
-          completed: false,
-          createdAt: now,
-          updatedAt: now,
-          source,
-        },
-      });
+      const task = await createTaskOnServer({ ...draft, title }, source);
+      dispatch({ type: "add-one", task });
     }
 
-    function addTasksFromTranscript(transcript: string) {
+    async function addTasksFromTranscript(transcript: string) {
       const segments = splitDictation(transcript);
-      const nextTasks = segments
-        .map((segment) => segment.trim())
-        .filter(Boolean)
-        .map((title) => {
-          const now = new Date().toISOString();
-          return {
-            id: createTaskId(),
-            title,
-            completed: false,
-            createdAt: now,
-            updatedAt: now,
-            source: "voice" as const,
-          } satisfies Task;
-        });
+      const nextTasks = [] as Task[];
+
+      for (const segment of segments.map((piece) => piece.trim()).filter(Boolean)) {
+        nextTasks.push(await createTaskOnServer({ title: segment, description: "", dueDate: "" }, "voice"));
+      }
 
       if (nextTasks.length > 0) {
         dispatch({ type: "add-many", tasks: nextTasks.sort(sortTasks) });
       }
     }
 
-    function toggleTask(taskId: string) {
-      dispatch({ type: "toggle", taskId });
+    async function toggleTask(taskId: string) {
+      const currentTask = tasks.find((task) => task.id === taskId);
+      if (!currentTask) {
+        return;
+      }
+
+      const updatedTask = await updateTaskOnServer(taskId, {
+        completed: !currentTask.completed,
+      });
+
+      dispatch({ type: "replace-one", task: updatedTask });
     }
 
-    function removeTask(taskId: string) {
+    async function removeTask(taskId: string) {
+      await deleteTaskOnServer(taskId);
       dispatch({ type: "remove", taskId });
     }
 
-    function updateTask(taskId: string, changes: Partial<Pick<Task, "title" | "description" | "dueDate">>) {
+    async function updateTask(taskId: string, changes: Partial<Pick<Task, "title" | "description" | "dueDate">>) {
       const sanitizedChanges = Object.fromEntries(
-        Object.entries(changes).filter(([, value]) => typeof value === "string" && value.trim().length > 0),
+        Object.entries(changes).filter(([, value]) => typeof value === "string"),
       ) as Partial<Pick<Task, "title" | "description" | "dueDate">>;
 
-      dispatch({ type: "update", taskId, changes: sanitizedChanges });
+      const updatedTask = await updateTaskOnServer(taskId, sanitizedChanges);
+      dispatch({ type: "replace-one", task: updatedTask });
     }
 
     return {

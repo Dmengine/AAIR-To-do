@@ -1,7 +1,5 @@
 import { Audio } from "expo-av";
-import Constants from "expo-constants";
-
-const DEFAULT_API_URL = "http://localhost:4000";
+import { getApiUrl } from "./api";
 
 export async function requestMicrophonePermissionsAsync(): Promise<boolean> {
   const permission = await Audio.requestPermissionsAsync();
@@ -41,14 +39,14 @@ export async function transcribeRecordingAsync(recordingUri: string): Promise<st
 
   let response: Response;
   try {
-    response = await fetch(`${getApiUrl()}/voice/transcribe`, {
+    const apiUrl = getApiUrl();
+    response = await fetch(`${apiUrl}/voice/transcribe`, {
       method: "POST",
       body: formData,
     });
   } catch {
-    throw new Error(
-      `Unable to reach the transcription server at ${getApiUrl()}. Make sure the API is running and your mobile device can reach your computer on port 4000.`,
-    );
+    const apiUrl = getApiUrl();
+    throw new Error(`Unable to reach the transcription server at ${apiUrl}. If you are on a physical device, set EXPO_PUBLIC_API_URL to your computer's LAN IP, for example http://192.168.1.50:4000. On Android emulators, the app uses http://10.0.2.2:4000 automatically.`);
   }
 
   if (!response.ok) {
@@ -58,33 +56,4 @@ export async function transcribeRecordingAsync(recordingUri: string): Promise<st
 
   const payload = (await response.json()) as { transcript?: string };
   return payload.transcript?.trim() ?? "";
-}
-
-export function getApiUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (envUrl) {
-    return envUrl;
-  }
-
-  const hostUrl = getDevelopmentHostUrl();
-  if (hostUrl) {
-    return hostUrl;
-  }
-
-  return DEFAULT_API_URL;
-}
-
-function getDevelopmentHostUrl(): string | null {
-  const hostUri = Constants.expoConfig?.hostUri?.trim();
-  if (!hostUri) {
-    return null;
-  }
-
-  const hostWithoutScheme = hostUri.replace(/^https?:\/\//, "").replace(/^exp:\/\//, "");
-  const hostName = hostWithoutScheme.split(":")[0]?.trim();
-  if (!hostName) {
-    return null;
-  }
-
-  return `http://${hostName}:4000`;
 }

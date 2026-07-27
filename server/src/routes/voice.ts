@@ -1,7 +1,5 @@
 import { Router } from "express";
 import multer from "multer";
-import OpenAI from "openai";
-import { toFile } from "openai/uploads";
 
 import { env } from "../env.js";
 
@@ -24,22 +22,43 @@ voiceRouter.post("/transcribe", upload.single("audio"), async (request, response
     }
 
     if (!env.openAiApiKey) {
-      response.json({ transcript: transcriptOverride || "Buy provisions and call mom" });
+      response.status(503).json({ error: "Voice transcription is not configured." });
       return;
     }
 
-    const client = new OpenAI({ apiKey: env.openAiApiKey });
-    const file = await toFile(uploadedAudio.buffer, uploadedAudio.originalname, {
-      type: uploadedAudio.mimetype,
+    const formData = new FormData();
+    formData.append("model", "whisper-1");
+    formData.append(
+      "file",
+      new Blob([uploadedAudio.buffer], { type: uploadedAudio.mimetype }),
+      uploadedAudio.originalname,
+    );
+
+    const transcriptionResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.openAiApiKey}`,
+      },
+      body: formData,
     });
 
-    const transcription = await client.audio.transcriptions.create({
-      file,
-      model: "whisper-1",
-    });
+    if (!transcriptionResponse.ok) {
+      const errorPayload = (await transcriptionResponse.json().catch(() => null)) as
+        | { error?: { message?: string; code?: string } }
+        | null;
 
-    response.json({ transcript: transcription.text });
+      const errorMessage = errorPayload?.error?.message ?? `OpenAI transcription failed with status ${transcriptionResponse.status}`;
+      const errorCode = errorPayload?.error?.code;
+
+      console.warn(`Voice transcription unavailable. ${errorCode ? `${errorCode}: ` : ""}${errorMessage}`);
+      response.status(503).json({ error: errorMessage });
+      return;
+    }
+
+    const transcriptionPayload = (await transcriptionResponse.json()) as { text?: string };
+    response.json({ transcript: transcriptionPayload.text ?? transcriptOverride });
   } catch (error) {
-    next(error);
+    console.warn(`Voice transcription failed. ${error instanceof Error ? error.message : "Unknown error."}`);
+    response.status(503).json({ error: "Voice transcription failed." });
   }
 });

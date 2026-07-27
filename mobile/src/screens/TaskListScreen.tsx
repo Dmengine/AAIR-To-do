@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -14,6 +14,22 @@ type TaskListScreenProps = NativeStackScreenProps<RootStackParamList, "TaskList"
 export function TaskListScreen({ navigation }: TaskListScreenProps) {
   const { tasks, taskCounts, toggleTask, removeTask } = useTasks();
   const [query, setQuery] = useState("");
+
+  async function handleToggleTask(taskId: string) {
+    try {
+      await toggleTask(taskId);
+    } catch (error) {
+      Alert.alert("Sync failed", error instanceof Error ? error.message : "Unable to update the task.");
+    }
+  }
+
+  async function handleDeleteTask(taskId: string) {
+    try {
+      await removeTask(taskId);
+    } catch (error) {
+      Alert.alert("Delete failed", error instanceof Error ? error.message : "Unable to delete the task.");
+    }
+  }
 
   const filteredTasks = useMemo(() => {
     const lowerCaseQuery = query.trim().toLowerCase();
@@ -31,17 +47,9 @@ export function TaskListScreen({ navigation }: TaskListScreenProps) {
     <SafeAreaView style={styles.screen}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.headerIconWrap}>
-            <MaterialIcons name="menu" size={24} color={theme.colors.text} />
-          </View>
-
           <View style={styles.headerContent}>
             <Text style={styles.title}>Tasks</Text>
             <Text style={styles.subtitle}>{taskCounts.active} tasks remaining</Text>
-          </View>
-
-          <View style={styles.headerIconWrap}>
-            <MaterialIcons name="settings" size={22} color={theme.colors.text} />
           </View>
         </View>
 
@@ -81,7 +89,14 @@ export function TaskListScreen({ navigation }: TaskListScreenProps) {
             contentContainerStyle={styles.list}
             data={filteredTasks}
             keyExtractor={(task) => task.id}
-            renderItem={({ item }) => <TaskCard onDelete={removeTask} onToggle={toggleTask} task={item} />}
+            renderItem={({ item }) => (
+              <TaskCard
+                onPress={(taskId) => navigation.navigate("TaskDetail", { taskId })}
+                onDelete={handleDeleteTask}
+                onToggle={handleToggleTask}
+                task={item}
+              />
+            )}
             ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
             showsVerticalScrollIndicator={false}
           />
@@ -109,22 +124,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "flex-start",
     paddingTop: theme.spacing.sm,
     marginBottom: theme.spacing.lg,
   },
-  headerIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.surfaceSoft,
-  },
   headerContent: {
-    flex: 1,
-    paddingRight: theme.spacing.md,
     alignItems: "center",
   },
   title: {

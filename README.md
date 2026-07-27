@@ -17,13 +17,13 @@ Minimalist React Native to-do app built with TypeScript, AsyncStorage, React Nav
 - Two-screen navigation: Task List and Add Task
 - Voice FAB that records audio and transcribes it into one or more tasks
 - Search filtering and due-date support
-- Clean light UI tuned to the supplied Stitch design system
+- Clean light UI tuned to the app's own visual design
 
 ## Project Layout
 
 - `mobile/` React Native app
 - `server/` Node.js API and MongoDB models
-- `.stitch/` downloaded Stitch reference assets
+- `assets/` static app assets and imagery
 
 ## Setup
 
@@ -47,7 +47,8 @@ Set `MONGODB_URI` to your Atlas connection string and `OPENAI_API_KEY` if you wa
 cp mobile/.env.example mobile/.env
 ```
 
-Update `EXPO_PUBLIC_API_URL` if the API runs on a different host.
+For a physical device, set `EXPO_PUBLIC_API_URL` to your computer's LAN IP, for example `http://192.168.1.50:4000`.
+Android emulators can use `http://10.0.2.2:4000`. iOS simulators can usually use `http://localhost:4000`.
 
 ## Run
 

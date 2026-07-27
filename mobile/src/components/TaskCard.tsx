@@ -7,17 +7,21 @@ import { theme } from "../theme";
 
 type TaskCardProps = {
   task: Task;
+  onPress: (taskId: string) => void;
   onToggle: (taskId: string) => void;
   onDelete: (taskId: string) => void;
 };
 
-export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onPress, onToggle, onDelete }: TaskCardProps) {
   return (
-    <View style={[styles.card, task.completed && styles.cardCompleted]}>
+    <Pressable onPress={() => onPress(task.id)} style={({ pressed }) => [styles.card, task.completed && styles.cardCompleted, pressed && styles.cardPressed]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.completed }}
-        onPress={() => onToggle(task.id)}
+        onPress={(event) => {
+          event.stopPropagation();
+          onToggle(task.id);
+        }}
         style={[styles.checkbox, task.completed && styles.checkboxCompleted]}
       >
         {task.completed ? (
@@ -38,12 +42,19 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
 
         <View style={styles.metaRow}>
           {task.dueDate ? <Text style={styles.meta}>Due {formatDate(task.dueDate)}</Text> : null}
-          <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteButton}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={(event) => {
+              event.stopPropagation();
+              onDelete(task.id);
+            }}
+            style={styles.deleteButton}
+          >
             <MaterialIcons name="delete" size={18} color={theme.colors.destructive} />
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -74,6 +85,9 @@ const styles = StyleSheet.create({
   },
   cardCompleted: {
     opacity: 0.82,
+  },
+  cardPressed: {
+    opacity: 0.92,
   },
   checkbox: {
     width: 24,
@@ -117,6 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 4,
+    gap: theme.spacing.sm,
   },
   meta: {
     color: theme.colors.primary,

@@ -12,7 +12,9 @@ const taskDraftSchema = z.object({
   source: z.enum(["manual", "voice"]).optional(),
 });
 
-const patchSchema = taskDraftSchema.partial();
+const patchSchema = taskDraftSchema.partial().extend({
+  completed: z.boolean().optional(),
+});
 
 export const taskRouter = Router();
 

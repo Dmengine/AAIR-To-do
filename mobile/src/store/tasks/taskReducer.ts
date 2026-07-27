@@ -4,6 +4,7 @@ export type TaskAction =
   | { type: "hydrate"; tasks: Task[] }
   | { type: "add-many"; tasks: Task[] }
   | { type: "add-one"; task: Task }
+  | { type: "replace-one"; task: Task }
   | { type: "toggle"; taskId: string }
   | { type: "remove"; taskId: string }
   | { type: "update"; taskId: string; changes: Partial<Pick<Task, "title" | "description" | "dueDate">> };
@@ -16,6 +17,8 @@ export function taskReducer(state: Task[], action: TaskAction): Task[] {
       return [...action.tasks, ...state].sort(sortTasks);
     case "add-one":
       return [action.task, ...state].sort(sortTasks);
+    case "replace-one":
+      return state.map((task) => (task.id === action.task.id ? action.task : task)).sort(sortTasks);
     case "toggle":
       return state.map((task) =>
         task.id === action.taskId

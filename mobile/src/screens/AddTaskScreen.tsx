@@ -14,18 +14,26 @@ import { splitDictation } from "../utils/splitDictation";
 type AddTaskScreenProps = NativeStackScreenProps<RootStackParamList, "AddTask">;
 
 export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
-  const { addTask, addTasksFromTranscript } = useTasks();
-  const [title, setTitle] = useState(route.params?.prefilledTitle ?? "");
-  const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const { tasks, addTask, addTasksFromTranscript, updateTask } = useTasks();
+  const editingTask = route.params?.taskId ? tasks.find((task) => task.id === route.params.taskId) : undefined;
+  const isEditing = Boolean(editingTask);
+  const [title, setTitle] = useState(editingTask?.title ?? route.params?.prefilledTitle ?? "");
+  const [description, setDescription] = useState(editingTask?.description ?? "");
+  const [dueDate, setDueDate] = useState(editingTask?.dueDate ?? "");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [transcriptPreview, setTranscriptPreview] = useState<string>(route.params?.prefilledTitle ?? "");
+  const [transcriptPreview, setTranscriptPreview] = useState<string>(route.params?.prefilledTitle ?? editingTask?.title ?? "");
   const [isBusy, setIsBusy] = useState(false);
   const [audioLevel, setAudioLevel] = useState(-160);
   const recordingRef = useRef<Audio.Recording | null>(null);
 
-  const headerLabel = useMemo(() => (isListening ? "Recording" : "New Task"), [isListening]);
+  const headerLabel = useMemo(() => {
+    if (isListening) {
+      return "Recording";
+    }
+
+    return isEditing ? "Edit Task" : "New Task";
+  }, [isEditing, isListening]);
 
   function resetRecordingState() {
     setIsListening(false);
@@ -60,7 +68,7 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
       if (splitTranscript.length === 1) {
         setTitle(splitTranscript[0]);
       } else {
-        addTasksFromTranscript(transcript);
+        await addTasksFromTranscript(transcript);
         navigation.goBack();
       }
     } catch (error) {
@@ -77,8 +85,21 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
       return;
     }
 
-    addTask({ title: trimmedTitle, description, dueDate }, "manual");
-    navigation.goBack();
+    try {
+      if (isEditing && editingTask) {
+        await updateTask(editingTask.id, {
+          title: trimmedTitle,
+          description,
+          dueDate,
+        });
+      } else {
+        await addTask({ title: trimmedTitle, description, dueDate }, "manual");
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert("Save failed", error instanceof Error ? error.message : "Unable to save task.");
+    }
   }
 
   function handleDateChange(event: unknown, selectedDate?: Date) {
@@ -167,11 +188,13 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
               <Text style={styles.statusText}>Recording now</Text>
             </View>
           ) : null}
-          <Text style={styles.panelTitle}>{isListening ? "Listening now" : "Tap the mic to dictate one or more tasks"}</Text>
+          <Text style={styles.panelTitle}>{isListening ? "Listening now" : isEditing ? "Edit the task details below" : "Tap the mic to dictate one or more tasks"}</Text>
           <Text style={styles.panelBody}>
             {isListening
               ? "Speak naturally. Tap stop when you finish and the app will transcribe your voice into text."
-              : "Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”"}
+              : isEditing
+                ? "Update the fields below, then save your changes."
+                : "Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”"}
           </Text>
           {isListening ? (
             <View style={styles.levelWrap}>
@@ -234,7 +257,7 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
         </View>
 
         <Pressable onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save task</Text>
+          <Text style={styles.saveButtonText}>{isEditing ? "Save changes" : "Save task"}</Text>
         </Pressable>
 
         <Pressable onPress={() => navigation.goBack()} style={styles.cancelButton}>

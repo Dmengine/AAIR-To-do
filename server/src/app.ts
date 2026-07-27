@@ -15,6 +15,15 @@ export function createApp() {
   );
   app.use(express.json({ limit: "2mb" }));
 
+  app.get("/", (_request, response) => {
+    response.json({
+      name: "AAIR To-Do API",
+      status: "ok",
+      health: "/health",
+      routes: ["/tasks", "/voice"],
+    });
+  });
+
   app.get("/health", (_request, response) => {
     response.json({ ok: true });
   });
