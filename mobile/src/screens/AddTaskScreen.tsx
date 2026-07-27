@@ -1,13 +1,15 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Audio } from "expo-av";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { theme } from "../theme";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../store/tasks/TaskContext";
 import { requestMicrophonePermissionsAsync, startVoiceRecordingAsync, transcribeRecordingAsync } from "../services/voice";
+import { splitDictation } from "../utils/splitDictation";
 
 type AddTaskScreenProps = NativeStackScreenProps<RootStackParamList, "AddTask">;
 
@@ -17,11 +19,56 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isListening, setIsListening] = useState(Boolean(route.params?.voiceMode));
+  const [isListening, setIsListening] = useState(false);
   const [transcriptPreview, setTranscriptPreview] = useState<string>(route.params?.prefilledTitle ?? "");
   const [isBusy, setIsBusy] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(-160);
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
-  const headerLabel = useMemo(() => (isListening ? "Listening" : "New Task"), [isListening]);
+  const headerLabel = useMemo(() => (isListening ? "Recording" : "New Task"), [isListening]);
+
+  function resetRecordingState() {
+    setIsListening(false);
+    setIsBusy(false);
+    setAudioLevel(-160);
+  }
+
+  async function stopAndTranscribeRecording() {
+    const activeRecording = recordingRef.current;
+    if (!activeRecording) {
+      resetRecordingState();
+      return;
+    }
+
+    try {
+      await activeRecording.stopAndUnloadAsync();
+      const recordingUri = activeRecording.getURI();
+      recordingRef.current = null;
+
+      if (!recordingUri) {
+        throw new Error("No recording file was created.");
+      }
+
+      const transcript = await transcribeRecordingAsync(recordingUri);
+      if (!transcript) {
+        throw new Error("No transcript returned from the voice service.");
+      }
+
+      setTranscriptPreview(transcript);
+      const splitTranscript = splitDictation(transcript);
+
+      if (splitTranscript.length === 1) {
+        setTitle(splitTranscript[0]);
+      } else {
+        addTasksFromTranscript(transcript);
+        navigation.goBack();
+      }
+    } catch (error) {
+      Alert.alert("Voice input failed", error instanceof Error ? error.message : "Try again.");
+    } finally {
+      resetRecordingState();
+    }
+  }
 
   async function handleSave() {
     const trimmedTitle = title.trim();
@@ -47,6 +94,7 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
 
   async function handleVoiceMode() {
     if (isListening) {
+      await stopAndTranscribeRecording();
       return;
     }
 
@@ -60,48 +108,23 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
 
     let recording: Audio.Recording | null = null;
     try {
-      recording = await startVoiceRecordingAsync();
+      recording = await startVoiceRecordingAsync((status) => {
+        if (!status.isRecording) {
+          return;
+        }
+
+        if (typeof status.metering === "number") {
+          setAudioLevel(status.metering);
+        }
+      });
+      recordingRef.current = recording;
       setIsListening(true);
       setTranscriptPreview("Listening for tasks...");
-
-      const recordingRef = recording;
-      setTimeout(async () => {
-        try {
-          await recordingRef.stopAndUnloadAsync();
-          const recordingUri = recordingRef.getURI();
-          if (!recordingUri) {
-            throw new Error("No recording file was created.");
-          }
-
-          const transcript = await transcribeRecordingAsync(recordingUri);
-          if (!transcript) {
-            throw new Error("No transcript returned from the voice service.");
-          }
-
-          setTranscriptPreview(transcript);
-          const splitTranscript = transcript
-            .split(/(?:,|\.|!|\?| and then | then | and )/i)
-            .map((segment) => segment.trim())
-            .filter(Boolean);
-
-          if (splitTranscript.length === 1) {
-            setTitle(splitTranscript[0]);
-          } else {
-            addTasksFromTranscript(transcript);
-            navigation.goBack();
-          }
-        } catch (error) {
-          Alert.alert("Voice input failed", error instanceof Error ? error.message : "Try again.");
-        } finally {
-          setIsListening(false);
-          setIsBusy(false);
-        }
-      }, 1800);
     } catch (error) {
-      setIsListening(false);
-      setIsBusy(false);
+      resetRecordingState();
       Alert.alert("Voice input unavailable", error instanceof Error ? error.message : "Try again.");
       if (recording) {
+        recordingRef.current = null;
         void recording.stopAndUnloadAsync();
       }
     }
@@ -112,14 +135,22 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.topRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Text style={styles.icon}>‹</Text>
+            <MaterialIcons name="arrow-back" size={20} color={isListening ? theme.colors.surface : theme.colors.textMuted} />
           </Pressable>
           <View style={styles.headerTextWrap}>
             <Text style={styles.title}>{headerLabel}</Text>
             <Text style={styles.subtitle}>Capture your next task in seconds</Text>
           </View>
-          <Pressable onPress={handleVoiceMode} style={styles.iconButton} disabled={isBusy}>
-            <Text style={styles.icon}>{isListening ? "■" : "🎤"}</Text>
+          <Pressable
+            onPress={handleVoiceMode}
+            style={[styles.iconButton, isListening && styles.iconButtonListening]}
+            disabled={isBusy}
+          >
+            <MaterialIcons
+              name={isListening ? "stop" : "mic"}
+              size={20}
+              color={isListening ? theme.colors.surface : theme.colors.textMuted}
+            />
           </Pressable>
         </View>
 
@@ -130,11 +161,34 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
               <Text style={styles.voiceBadgeText}>AI assisted</Text>
             </View>
           </View>
+          {isListening ? (
+            <View style={styles.statusRow}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Recording now</Text>
+            </View>
+          ) : null}
           <Text style={styles.panelTitle}>{isListening ? "Listening now" : "Tap the mic to dictate one or more tasks"}</Text>
           <Text style={styles.panelBody}>
-            Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”
+            {isListening
+              ? "Speak naturally. Tap stop when you finish and the app will transcribe your voice into text."
+              : "Natural dictation is split into separate tasks. Example: “Buy provisions and call mom.”"}
           </Text>
+          {isListening ? (
+            <View style={styles.levelWrap}>
+              <View style={[styles.levelBar, styles.levelBarQuiet, { opacity: audioLevel > -50 ? 0.35 : 1 }]} />
+              <View style={[styles.levelBar, styles.levelBarMedium, { opacity: audioLevel > -35 ? 1 : 0.35 }]} />
+              <View style={[styles.levelBar, styles.levelBarTall, { opacity: audioLevel > -25 ? 1 : 0.35 }]} />
+              <View style={[styles.levelBar, styles.levelBarMedium, { opacity: audioLevel > -35 ? 1 : 0.35 }]} />
+              <View style={[styles.levelBar, styles.levelBarQuiet, { opacity: audioLevel > -50 ? 0.35 : 1 }]} />
+            </View>
+          ) : null}
           <Text style={styles.transcript}>{transcriptPreview || "Your transcript will appear here."}</Text>
+          {isListening ? (
+            <Pressable onPress={stopAndTranscribeRecording} style={styles.stopButton}>
+              <MaterialIcons name="stop" size={18} color={theme.colors.surface} />
+              <Text style={styles.stopButtonText}>Stop & transcribe</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.formCard}>
@@ -220,10 +274,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: theme.colors.surfaceSoft,
   },
+  iconButtonListening: {
+    backgroundColor: theme.colors.destructive,
+  },
   icon: {
-    fontSize: 20,
-    color: theme.colors.textMuted,
-    fontWeight: "700",
   },
   title: {
     fontSize: 24,
@@ -256,6 +310,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.destructive,
+  },
+  statusText: {
+    color: theme.colors.destructive,
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   voiceBadge: {
     backgroundColor: theme.colors.primaryTint,
@@ -293,6 +365,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "600",
+  },
+  levelWrap: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    gap: 6,
+    height: 28,
+    marginTop: 4,
+  },
+  levelBar: {
+    width: 6,
+    borderRadius: 999,
+    backgroundColor: theme.colors.destructive,
+  },
+  levelBarQuiet: {
+    height: 10,
+  },
+  levelBarMedium: {
+    height: 16,
+  },
+  levelBarTall: {
+    height: 24,
+  },
+  stopButton: {
+    marginTop: theme.spacing.sm,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: theme.colors.destructive,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  stopButtonText: {
+    color: theme.colors.surface,
+    fontSize: 14,
+    fontWeight: "700",
   },
   formCard: {
     backgroundColor: theme.colors.surface,

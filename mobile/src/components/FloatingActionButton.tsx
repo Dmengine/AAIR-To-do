@@ -1,23 +1,29 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { theme } from "../theme";
 
 type FloatingActionButtonProps = {
   onPress: () => void;
   listening?: boolean;
+  iconName?: "add" | "mic" | "stop";
 };
 
-export function FloatingActionButton({ onPress, listening = false }: FloatingActionButtonProps) {
+export function FloatingActionButton({ onPress, listening = false, iconName }: FloatingActionButtonProps) {
+  const resolvedIconName = iconName ?? (listening ? "stop" : "mic");
+  const accessibilityLabel =
+    resolvedIconName === "add" ? "Add task" : listening ? "Stop voice input" : "Start voice input";
+
   return (
     <View pointerEvents="box-none" style={styles.container}>
       <Pressable
-        accessibilityLabel={listening ? "Stop voice input" : "Start voice input"}
+        accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
         onPress={onPress}
         style={[styles.fab, listening && styles.fabListening]}
       >
-        <Text style={styles.icon}>{listening ? "■" : "🎤"}</Text>
+        <MaterialIcons name={resolvedIconName} size={24} color={theme.colors.surface} />
       </Pressable>
     </View>
   );
@@ -47,11 +53,5 @@ const styles = StyleSheet.create({
   },
   fabListening: {
     backgroundColor: theme.colors.destructive,
-  },
-  icon: {
-    color: theme.colors.surface,
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: "700",
   },
 });

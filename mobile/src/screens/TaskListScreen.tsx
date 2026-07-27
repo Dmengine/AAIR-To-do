@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { FloatingActionButton } from "../components/FloatingActionButton";
 import { TaskCard } from "../components/TaskCard";
@@ -28,58 +29,66 @@ export function TaskListScreen({ navigation }: TaskListScreenProps) {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.screenLabel}>Today</Text>
-          <Text style={styles.title}>Tasks</Text>
-          <Text style={styles.subtitle}>Stay on top of your day with calm, focused control.</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.headerIconWrap}>
+            <MaterialIcons name="menu" size={24} color={theme.colors.text} />
+          </View>
+
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Tasks</Text>
+            <Text style={styles.subtitle}>{taskCounts.active} tasks remaining</Text>
+          </View>
+
+          <View style={styles.headerIconWrap}>
+            <MaterialIcons name="settings" size={22} color={theme.colors.text} />
+          </View>
         </View>
 
-        <Pressable onPress={() => navigation.navigate("AddTask", {})} style={styles.addShortcut}>
-          <Text style={styles.addShortcutText}>＋</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.searchWrap}>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>⌕</Text>
-          <TextInput
-            placeholder="Search tasks"
-            placeholderTextColor={theme.colors.textSubtle}
-            value={query}
-            onChangeText={setQuery}
-            style={styles.searchInput}
-          />
+        <View style={styles.searchWrap}>
+          <View style={styles.searchBar}>
+            <MaterialIcons name="search" size={18} color={theme.colors.textSubtle} />
+            <TextInput
+              placeholder="Search tasks"
+              placeholderTextColor={theme.colors.textSubtle}
+              value={query}
+              onChangeText={setQuery}
+              style={styles.searchInput}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Ready to focus</Text>
-        <Text style={styles.summaryBody}>{taskCounts.active} active • {taskCounts.completed} completed • {taskCounts.total} total</Text>
-      </View>
-
-      {filteredTasks.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>○</Text>
-          <Text style={styles.emptyTitle}>{tasks.length === 0 ? "All caught up" : "No matching tasks"}</Text>
-          <Text style={styles.emptyBody}>
-            {tasks.length === 0
-              ? "Tap the mic to dictate a task or use the add screen for manual entry."
-              : "Try a different search term or clear the filter."}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Today's Focus</Text>
+          <Text style={styles.summaryBody}>
+            {taskCounts.active} tasks remaining
           </Text>
         </View>
-      ) : (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={filteredTasks}
-          keyExtractor={(task) => task.id}
-          renderItem={({ item }) => <TaskCard onDelete={removeTask} onToggle={toggleTask} task={item} />}
-          ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
 
-      <FloatingActionButton onPress={() => navigation.navigate("AddTask", { voiceMode: true })} />
+        {filteredTasks.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialIcons name="task-alt" size={54} color={theme.colors.border} />
+            <Text style={styles.emptyTitle}>{tasks.length === 0 ? "All caught up!" : "No matching tasks"}</Text>
+            <Text style={styles.emptyBody}>
+              {tasks.length === 0
+                ? "Enjoy your productivity. Tap the mic to record a new task."
+                : "Try a different search term or clear the filter."}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            style={styles.list}
+            contentContainerStyle={styles.list}
+            data={filteredTasks}
+            keyExtractor={(task) => task.id}
+            renderItem={({ item }) => <TaskCard onDelete={removeTask} onToggle={toggleTask} task={item} />}
+            ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+
+      <FloatingActionButton iconName="add" onPress={() => navigation.navigate("AddTask", {})} />
     </SafeAreaView>
   );
 }
@@ -88,9 +97,15 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.pageMargin,
     paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.lg,
+    alignItems: "center",
+  },
+  content: {
+    width: "100%",
+    maxWidth: 560,
+    flex: 1,
+    paddingHorizontal: theme.spacing.pageMargin,
   },
   header: {
     flexDirection: "row",
@@ -99,17 +114,18 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.sm,
     marginBottom: theme.spacing.lg,
   },
+  headerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.surfaceSoft,
+  },
   headerContent: {
     flex: 1,
     paddingRight: theme.spacing.md,
-  },
-  screenLabel: {
-    color: theme.colors.textSubtle,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: theme.spacing.xs,
+    alignItems: "center",
   },
   title: {
     color: theme.colors.primary,
@@ -117,35 +133,17 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontWeight: "700",
     letterSpacing: -0.8,
+    textAlign: "center",
   },
   subtitle: {
     color: theme.colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: theme.spacing.xs,
-  },
-  addShortcut: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.borderStrong,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  addShortcutText: {
-    fontSize: 22,
-    color: theme.colors.primary,
-    fontWeight: "700",
-    marginTop: -2,
+    textAlign: "center",
   },
   summaryCard: {
+    width: "100%",
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.borderStrong,
@@ -166,22 +164,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   searchWrap: {
+    width: "100%",
     marginBottom: theme.spacing.lg,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
+    width: "100%",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.borderStrong,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-  },
-  searchIcon: {
-    fontSize: 18,
-    color: theme.colors.textSubtle,
-    marginRight: theme.spacing.sm,
   },
   searchInput: {
     flex: 1,
@@ -190,18 +185,17 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   list: {
+    width: "100%",
+    flex: 1,
     paddingBottom: 120,
   },
   emptyState: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 36,
     paddingTop: 64,
     gap: theme.spacing.sm,
-  },
-  emptyIcon: {
-    fontSize: 54,
-    color: theme.colors.border,
   },
   emptyTitle: {
     color: theme.colors.text,

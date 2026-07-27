@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import type { Task } from "../types";
 import { theme } from "../theme";
@@ -19,7 +20,9 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
         onPress={() => onToggle(task.id)}
         style={[styles.checkbox, task.completed && styles.checkboxCompleted]}
       >
-        <Text style={[styles.checkboxMark, task.completed && styles.checkboxMarkCompleted]}>✓</Text>
+        {task.completed ? (
+          <MaterialIcons name="check" size={14} color={theme.colors.secondary} />
+        ) : null}
       </Pressable>
 
       <View style={styles.content}>
@@ -36,7 +39,7 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
         <View style={styles.metaRow}>
           {task.dueDate ? <Text style={styles.meta}>Due {formatDate(task.dueDate)}</Text> : null}
           <Pressable accessibilityRole="button" onPress={() => onDelete(task.id)} style={styles.deleteButton}>
-            <Text style={styles.deleteText}>Delete</Text>
+            <MaterialIcons name="delete" size={18} color={theme.colors.destructive} />
           </Pressable>
         </View>
       </View>
@@ -86,14 +89,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.secondaryTint,
     borderColor: theme.colors.secondary,
   },
-  checkboxMark: {
-    color: "transparent",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  checkboxMarkCompleted: {
-    color: theme.colors.secondary,
-  },
   content: {
     flex: 1,
     gap: 6,
@@ -133,10 +128,5 @@ const styles = StyleSheet.create({
   deleteButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-  },
-  deleteText: {
-    color: theme.colors.destructive,
-    fontSize: 12,
-    fontWeight: "700",
   },
 });

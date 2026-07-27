@@ -1,4 +1,5 @@
 import { Audio } from "expo-av";
+import Constants from "expo-constants";
 
 const DEFAULT_API_URL = "http://localhost:4000";
 
@@ -7,7 +8,7 @@ export async function requestMicrophonePermissionsAsync(): Promise<boolean> {
   return permission.status === "granted";
 }
 
-export async function startVoiceRecordingAsync() {
+export async function startVoiceRecordingAsync(onStatusUpdate?: (status: Audio.RecordingStatus) => void) {
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: true,
     playsInSilentModeIOS: true,
@@ -18,7 +19,14 @@ export async function startVoiceRecordingAsync() {
   });
 
   const recording = new Audio.Recording();
-  await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+  recording.setOnRecordingStatusUpdate((status) => {
+    onStatusUpdate?.(status);
+  });
+  recording.setProgressUpdateInterval(100);
+  await recording.prepareToRecordAsync({
+    ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+    isMeteringEnabled: true,
+  });
   await recording.startAsync();
   return recording;
 }
@@ -31,13 +39,21 @@ export async function transcribeRecordingAsync(recordingUri: string): Promise<st
     type: "audio/m4a",
   } as unknown as Blob);
 
-  const response = await fetch(`${getApiUrl()}/voice/transcribe`, {
-    method: "POST",
-    body: formData,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}/voice/transcribe`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch {
+    throw new Error(
+      `Unable to reach the transcription server at ${getApiUrl()}. Make sure the API is running and your mobile device can reach your computer on port 4000.`,
+    );
+  }
 
   if (!response.ok) {
-    throw new Error(`Voice transcription failed with status ${response.status}`);
+    const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorPayload?.error ?? `Voice transcription failed with status ${response.status}`);
   }
 
   const payload = (await response.json()) as { transcript?: string };
@@ -45,5 +61,30 @@ export async function transcribeRecordingAsync(recordingUri: string): Promise<st
 }
 
 export function getApiUrl(): string {
-  return process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_URL;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (envUrl) {
+    return envUrl;
+  }
+
+  const hostUrl = getDevelopmentHostUrl();
+  if (hostUrl) {
+    return hostUrl;
+  }
+
+  return DEFAULT_API_URL;
+}
+
+function getDevelopmentHostUrl(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri?.trim();
+  if (!hostUri) {
+    return null;
+  }
+
+  const hostWithoutScheme = hostUri.replace(/^https?:\/\//, "").replace(/^exp:\/\//, "");
+  const hostName = hostWithoutScheme.split(":")[0]?.trim();
+  if (!hostName) {
+    return null;
+  }
+
+  return `http://${hostName}:4000`;
 }

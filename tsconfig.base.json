@@ -9,7 +9,6 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0"
+    "baseUrl": "."
   }
 }
