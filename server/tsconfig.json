@@ -4,6 +4,7 @@
     "outDir": "dist",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "ignoreDeprecations": "6.0",
     "lib": ["ES2022"],
     "types": ["node"]
   },

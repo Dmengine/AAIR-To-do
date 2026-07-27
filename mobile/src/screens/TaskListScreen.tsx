@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Alert, FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FloatingActionButton } from "../components/FloatingActionButton";
 import { TaskCard } from "../components/TaskCard";

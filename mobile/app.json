@@ -10,22 +10,21 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow voice dictation for new tasks."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#f7f9fb"
       }
     },
-    "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "Allow voice dictation for new tasks."
-      }
-    },
     "web": {
       "bundler": "metro"
     },
-    "plugins": []
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }
