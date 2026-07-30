@@ -1,31 +1,31 @@
-# Voice-Enabled Todo App
+# AAIR ToDo
 
-Minimalist React Native to-do app built with TypeScript, AsyncStorage, React Navigation, and a Node.js + MongoDB backend for optional sync and voice transcription.
+AAIR ToDo is a voice-enabled task manager built with React Native and Expo. It combines a polished mobile UI with optional backend sync so tasks can be stored locally and backed by a Node.js + MongoDB service when needed.
 
-## Stack
+## What it does
 
-- React Native with Expo and TypeScript
-- Node.js + Express
-- MongoDB Atlas with transactional writes
-- AsyncStorage for local persistence
-- AssemblyAI transcription endpoint for voice input
+- Create, edit, complete, and delete tasks
+- Browse tasks in a scrollable list with search filtering
+- Open a task detail screen with created and updated timestamps
+- Record voice input from the floating action button and transcribe it into task content
+- Toggle between light and dark themes
+- Persist tasks locally with AsyncStorage while optionally syncing through the API
 
-## Features
+## Tech stack
 
-- Add, edit, complete, and delete tasks
-- Local persistence across app launches
-- Two-screen navigation: Task List and Add Task
-- Voice FAB that records audio and transcribes it into one or more tasks
-- Search filtering and due-date support
-- Clean light UI tuned to the app's own visual design
+- Mobile app: React Native, Expo, TypeScript, React Navigation, Safe Area layout
+- UI: custom theme system and reusable task cards
+- Backend: Node.js, Express, MongoDB Atlas
+- Voice: Expo audio recording with backend transcription support
 
-## Project Layout
+## Project structure
 
-- `mobile/` React Native app
-- `server/` Node.js API and MongoDB models
-- `assets/` static app assets and imagery
+- mobile/ - Expo app source, screens, navigation, state, and services
+- server/ - Express API and MongoDB models/routes
+- assets/ - app assets and images
+- screenshots/ - app screenshots for reference
 
-## Setup
+## Getting started
 
 1. Install dependencies from the repository root:
 
@@ -33,26 +33,35 @@ Minimalist React Native to-do app built with TypeScript, AsyncStorage, React Nav
 npm install
 ```
 
-2. Configure the backend environment in `server/.env`:
+2. Create a backend environment file for the server:
 
 ```bash
 cp server/.env.example server/.env
 ```
 
-Set `MONGODB_URI` to your Atlas connection string and `ASSEMBLYAI_API_KEY` if you want live speech-to-text transcription.
+If the file does not exist yet, create server/.env manually and add at least:
 
-3. Configure the mobile environment in `mobile/.env`:
+```env
+MONGODB_URI=your-mongodb-connection-string
+ASSEMBLYAI_API_KEY=your-api-key-if-you-want-live-transcription
+PORT=4000
+```
+
+3. Optionally create a mobile environment file:
 
 ```bash
 cp mobile/.env.example mobile/.env
 ```
 
-For a physical device, set `EXPO_PUBLIC_API_URL` to your computer's LAN IP, for example `http://192.168.1.50:4000`.
-Android emulators can use `http://10.0.2.2:4000`. iOS simulators can usually use `http://localhost:4000`.
+If you are testing on a physical device, set EXPO_PUBLIC_API_URL to your local backend address, for example:
 
-## Run
+```env
+EXPO_PUBLIC_API_URL=http://192.168.1.50:4000
+```
 
-Start the API:
+## Run the app
+
+Start the backend:
 
 ```bash
 npm run server
@@ -64,14 +73,24 @@ Start the mobile app:
 npm run mobile
 ```
 
-## Voice Flow
+## Voice flow
 
-Tap the microphone FAB on the Task List screen to open the Add Task screen in voice mode. The app records audio, sends it to the backend transcription endpoint, and splits dictation like “Buy provisions and call mom” into separate tasks.
+From the task list screen, tap the microphone button to enter voice capture mode. The app records audio, sends it to the backend transcription service, and attempts to turn the transcript into a structured task title and description.
 
-## ACID Workflow
+## Development checks
 
-For task writes on the API I used MongoDB transactions for create, update, and delete operations. The mobile app also keeps an AsyncStorage copy so the task list survives app restarts even when the network is unavailable.
+Run the mobile TypeScript check:
+
+```bash
+./node_modules/.bin/tsc -p mobile/tsconfig.json --noEmit --pretty false
+```
+
+Run the mobile test suite:
+
+```bash
+npm --workspace mobile run test
+```
 
 ## Screenshots
 
-I added the final app screenshots to `screenshots/` and embed them here so the evaluation can review the finished build without cloning the project.
+Reference screenshots are available in the screenshots/ folder.
