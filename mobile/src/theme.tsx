@@ -68,7 +68,7 @@ export const darkTheme = {
 export type AppTheme = typeof lightTheme | typeof darkTheme;
 
 type ThemeContextValue = {
-  theme: AppTheme;
+  theme: typeof lightTheme | typeof darkTheme;
   isDarkMode: boolean;
   toggleTheme: () => void;
 };

@@ -1,9 +1,9 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import type { Task } from "../types";
-import { theme } from "../theme";
+import { useTheme } from "../theme";
 
 type TaskCardProps = {
   task: Task;
@@ -12,9 +12,23 @@ type TaskCardProps = {
   onDelete: (taskId: string) => void;
 };
 
-export function TaskCard({ task, onPress, onToggle, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onPress, onToggle, onDelete }: TaskCardProps): React.JSX.Element {
+  const { theme } = useTheme();
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: task.completed ? 1 : 0,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }, [animatedValue, task.completed]);
+
+  const opacity = animatedValue.interpolate({ inputRange: [0, 1], outputRange: [1, 0.82] });
+
   return (
-    <Pressable onPress={() => onPress(task.id)} style={({ pressed }) => [styles.card, task.completed && styles.cardCompleted, pressed && styles.cardPressed]}>
+    <Animated.View style={{ opacity }}>
+      <Pressable onPress={() => onPress(task.id)} style={({ pressed }) => [styles(theme).card, task.completed && styles(theme).cardCompleted, pressed && styles(theme).cardPressed]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.completed }}
@@ -22,39 +36,40 @@ export function TaskCard({ task, onPress, onToggle, onDelete }: TaskCardProps) {
           event.stopPropagation();
           onToggle(task.id);
         }}
-        style={[styles.checkbox, task.completed && styles.checkboxCompleted]}
+        style={[styles(theme).checkbox, task.completed && styles(theme).checkboxCompleted]}
       >
         {task.completed ? (
           <MaterialIcons name="check" size={14} color={theme.colors.secondary} />
         ) : null}
       </Pressable>
 
-      <View style={styles.content}>
-        <Text style={[styles.title, task.completed && styles.titleCompleted]} numberOfLines={2}>
+      <View style={styles(theme).content}>
+        <Text style={[styles(theme).title, task.completed && styles(theme).titleCompleted]} numberOfLines={2}>
           {task.title}
         </Text>
 
         {task.description ? (
-          <Text style={[styles.description, task.completed && styles.descriptionCompleted]} numberOfLines={2}>
+          <Text style={[styles(theme).description, task.completed && styles(theme).descriptionCompleted]} numberOfLines={2}>
             {task.description}
           </Text>
         ) : null}
 
-        <View style={styles.metaRow}>
-          {task.dueDate ? <Text style={styles.meta}>Due {formatDate(task.dueDate)}</Text> : null}
+        <View style={styles(theme).metaRow}>
+          {task.dueDate ? <Text style={styles(theme).meta}>Due {formatDate(task.dueDate)}</Text> : null}
           <Pressable
             accessibilityRole="button"
             onPress={(event) => {
               event.stopPropagation();
               onDelete(task.id);
             }}
-            style={styles.deleteButton}
+            style={styles(theme).deleteButton}
           >
             <MaterialIcons name="delete" size={18} color={theme.colors.destructive} />
           </Pressable>
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -67,7 +82,7 @@ function formatDate(value: string): string {
   return parsedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-const styles = StyleSheet.create({
+const styles = (theme: ReturnType<typeof useTheme>["theme"]) => StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
     borderColor: theme.colors.borderStrong,

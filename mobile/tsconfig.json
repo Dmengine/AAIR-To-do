@@ -2,9 +2,10 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
-    "jsx": "react-jsx",
-    "module": "NodeNext",
-    "types": ["react", "react-native"]
+    "jsx": "react-native",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "types": ["react", "react-native", "jest"]
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

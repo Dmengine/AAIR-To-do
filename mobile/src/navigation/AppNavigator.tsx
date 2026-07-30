@@ -23,10 +23,17 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export function AppNavigator() {
+type AppNavigatorProps = {
+  toggleTheme: () => void;
+  isDarkMode: boolean;
+};
+
+export function AppNavigator({ toggleTheme, isDarkMode }: AppNavigatorProps) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="TaskList" component={TaskListScreen} />
+      <Stack.Screen name="TaskList">
+        {(props) => <TaskListScreen {...props} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />}
+      </Stack.Screen>
       <Stack.Screen name="AddTask" component={AddTaskScreen} />
       <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
     </Stack.Navigator>

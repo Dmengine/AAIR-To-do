@@ -8,20 +8,23 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { AppNavigator } from "./src/navigation/AppNavigator";
-import { theme } from "./src/theme";
+import { ThemeProvider, useTheme } from "./src/theme";
 import { TaskProvider, useTasks } from "./src/store/tasks/TaskContext";
 
 function LoadingScreen() {
+  const { theme } = useTheme();
+
   return (
-    <SafeAreaView style={styles.loadingScreen}>
+    <SafeAreaView style={[styles.loadingScreen, { backgroundColor: theme.colors.background }]}> 
       <ActivityIndicator color={theme.colors.primary} size="large" />
-      <Text style={styles.loadingText}>Loading tasks…</Text>
+      <Text style={[styles.loadingText, { color: theme.colors.textMuted }]}>Loading tasks…</Text>
     </SafeAreaView>
   );
 }
 
 function AppContent() {
   const { isHydrated } = useTasks();
+  const { theme, isDarkMode, toggleTheme } = useTheme();
 
   if (!isHydrated) {
     return <LoadingScreen />;
@@ -42,8 +45,8 @@ function AppContent() {
         },
       }}
     >
-      <AppNavigator />
-      <StatusBar style="dark" />
+      <AppNavigator toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
     </NavigationContainer>
   );
 }
@@ -52,9 +55,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.flex}>
-        <TaskProvider>
-          <AppContent />
-        </TaskProvider>
+        <ThemeProvider>
+          <TaskProvider>
+            <AppContent />
+          </TaskProvider>
+        </ThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
@@ -63,17 +68,14 @@ export default function App() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   loadingScreen: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
     gap: 12,
   },
   loadingText: {
-    color: theme.colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
   },

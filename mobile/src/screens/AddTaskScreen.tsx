@@ -6,7 +6,7 @@ import { Audio } from "expo-av";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { theme } from "../theme";
+import { useTheme, type AppTheme } from "../theme";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../store/tasks/TaskContext";
 import { requestMicrophonePermissionsAsync, startVoiceRecordingAsync, transcribeRecordingAsync } from "../services/voice";
@@ -17,6 +17,7 @@ type AddTaskScreenProps = NativeStackScreenProps<RootStackParamList, "AddTask">;
 
 export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
   const { tasks, addTask, addTasksFromTranscript, updateTask } = useTasks();
+  const { theme } = useTheme();
   const editingTask = route.params?.taskId ? tasks.find((task) => task.id === route.params.taskId) : undefined;
   const isEditing = Boolean(editingTask);
   const [title, setTitle] = useState(editingTask?.title ?? route.params?.prefilledTitle ?? "");
@@ -167,6 +168,8 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
     }
   }
 
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -284,7 +287,8 @@ export function AddTaskScreen({ navigation, route }: AddTaskScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -510,4 +514,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-});
+  });
+}

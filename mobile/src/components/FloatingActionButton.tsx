@@ -1,8 +1,8 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-import { theme } from "../theme";
+import { useTheme } from "../theme";
 
 type FloatingActionButtonProps = {
   onPress: () => void;
@@ -11,17 +11,18 @@ type FloatingActionButtonProps = {
 };
 
 export function FloatingActionButton({ onPress, listening = false, iconName }: FloatingActionButtonProps) {
+  const { theme } = useTheme();
   const resolvedIconName = iconName ?? (listening ? "stop" : "mic");
   const accessibilityLabel =
     resolvedIconName === "add" ? "Add task" : listening ? "Stop voice input" : "Start voice input";
 
   return (
-    <View pointerEvents="box-none" style={styles.container}>
+    <View pointerEvents="box-none" style={styles(theme).container}>
       <Pressable
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
         onPress={onPress}
-        style={[styles.fab, listening && styles.fabListening]}
+        style={[styles(theme).fab, listening && styles(theme).fabListening]}
       >
         <MaterialIcons name={resolvedIconName} size={24} color={theme.colors.surface} />
       </Pressable>
@@ -29,7 +30,8 @@ export function FloatingActionButton({ onPress, listening = false, iconName }: F
   );
 }
 
-const styles = StyleSheet.create({
+function styles(theme: ReturnType<typeof useTheme>["theme"]) {
+  return StyleSheet.create({
   container: {
     position: "absolute",
     right: 24,
@@ -55,3 +57,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.destructive,
   },
 });
+}

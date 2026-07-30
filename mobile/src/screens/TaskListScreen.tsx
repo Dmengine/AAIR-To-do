@@ -1,19 +1,23 @@
 import React, { useMemo, useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FloatingActionButton } from "../components/FloatingActionButton";
 import { TaskCard } from "../components/TaskCard";
-import { theme } from "../theme";
+import { useTheme, type AppTheme } from "../theme";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../store/tasks/TaskContext";
 
-type TaskListScreenProps = NativeStackScreenProps<RootStackParamList, "TaskList">;
+type TaskListScreenProps = NativeStackScreenProps<RootStackParamList, "TaskList"> & {
+  toggleTheme?: () => void;
+  isDarkMode?: boolean;
+};
 
-export function TaskListScreen({ navigation }: TaskListScreenProps) {
+export function TaskListScreen({ navigation, toggleTheme, isDarkMode }: TaskListScreenProps) {
   const { tasks, taskCounts, toggleTask, removeTask } = useTasks();
+  const { theme } = useTheme();
   const [query, setQuery] = useState("");
 
   async function handleToggleTask(taskId: string) {
@@ -44,14 +48,26 @@ export function TaskListScreen({ navigation }: TaskListScreenProps) {
     });
   }, [query, tasks]);
 
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.title}>Tasks</Text>
             <Text style={styles.subtitle}>{taskCounts.active} tasks remaining</Text>
           </View>
+          {toggleTheme ? (
+            <Pressable onPress={toggleTheme} style={styles.toggleButton} accessibilityLabel="Toggle theme">
+              <MaterialIcons name={isDarkMode ? "light-mode" : "dark-mode"} size={20} color={theme.colors.primary} />
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.searchWrap}>
@@ -85,31 +101,28 @@ export function TaskListScreen({ navigation }: TaskListScreenProps) {
             </Text>
           </View>
         ) : (
-          <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.list}
-            data={filteredTasks}
-            keyExtractor={(task) => task.id}
-            renderItem={({ item }) => (
-              <TaskCard
-                onPress={(taskId) => navigation.navigate("TaskDetail", { taskId })}
-                onDelete={handleDeleteTask}
-                onToggle={handleToggleTask}
-                task={item}
-              />
-            )}
-            ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
-            showsVerticalScrollIndicator={false}
-          />
+          <View style={styles.list}>
+            {filteredTasks.map((task) => (
+              <View key={task.id} style={styles.taskCardWrap}>
+                <TaskCard
+                  onPress={(taskId) => navigation.navigate("TaskDetail", { taskId })}
+                  onDelete={handleDeleteTask}
+                  onToggle={handleToggleTask}
+                  task={task}
+                />
+              </View>
+            ))}
+          </View>
         )}
-      </View>
+      </ScrollView>
 
       <FloatingActionButton iconName="add" onPress={() => navigation.navigate("AddTask", {})} />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -121,7 +134,10 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 560,
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: theme.spacing.pageMargin,
+    paddingBottom: 140,
   },
   header: {
     flexDirection: "row",
@@ -131,7 +147,16 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   headerContent: {
+    flex: 1,
     alignItems: "center",
+  },
+  toggleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.surfaceSoft,
   },
   title: {
     color: theme.colors.primary,
@@ -192,8 +217,10 @@ const styles = StyleSheet.create({
   },
   list: {
     width: "100%",
-    flex: 1,
-    paddingBottom: 120,
+    gap: theme.spacing.md,
+  },
+  taskCardWrap: {
+    width: "100%",
   },
   emptyState: {
     width: "100%",
@@ -215,4 +242,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: "center",
   },
-});
+  });
+}

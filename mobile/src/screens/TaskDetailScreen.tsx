@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { theme } from "../theme";
+import { useTheme, type AppTheme } from "../theme";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 import { useTasks } from "../store/tasks/TaskContext";
 
@@ -12,7 +12,10 @@ type TaskDetailScreenProps = NativeStackScreenProps<RootStackParamList, "TaskDet
 
 export function TaskDetailScreen({ navigation, route }: TaskDetailScreenProps) {
   const { tasks } = useTasks();
+  const { theme } = useTheme();
   const task = useMemo(() => tasks.find((item) => item.id === route.params.taskId), [route.params.taskId, tasks]);
+
+  const styles = createStyles(theme);
 
   if (!task) {
     return (
@@ -112,7 +115,8 @@ function formatDateTime(value: string): string {
   });
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -263,4 +267,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: "center",
   },
-});
+  });
+}
